@@ -1,9 +1,3 @@
-Worked for 36s
-
-1. Open sitemap.xml and tap ✏️ Edit.
-
-2. Replace everything with this, then tap Commit changes:
-
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://www.lyudowitz.com/</loc></url>
