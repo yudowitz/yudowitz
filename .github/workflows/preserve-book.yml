@@ -42,4 +42,5 @@ jobs:
           git add book/cover-current.png documents/Aventura_Exhibits_Book_Extract.pdf
           git diff --cached --quiet && exit 0
           git commit -m "Preserve verified book downloads and Aventura exhibit extract on own domain"
+          git pull --rebase origin main
           git push
