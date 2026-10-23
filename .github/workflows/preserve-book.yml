@@ -1,0 +1,48 @@
+name: Preserve verified book files
+on:
+  push:
+    paths:
+      - '.github/workflows/preserve-book.yml'
+permissions:
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pypdf
+      - name: Download and verify existing public editions
+        run: |
+          python - <<'PY'
+          import urllib.request, hashlib, pathlib
+          from pypdf import PdfReader, PdfWriter
+          files = [
+            ("https://zenodo.org/records/23573639/files/Targeted_Complete_Book.epub?download=1", "book/Targeted_Complete_Book.epub", "e22bda0b5433fb86c71c5f4b97e55256dd003cd9dea7d7faa2d7bc0771da3aee"),
+            ("https://zenodo.org/records/23486128/files/FIRST_Edition_Book_FBI_ACTION_NOW.pdf?download=1", "book/FIRST_Edition_Book_FBI_ACTION_NOW.pdf", "531593160ab85eda18bbd8d22daadb5119b44e15d172a7f0c6e5d6425fe09fed")
+          ]
+          for url, dest, expected in files:
+              data = urllib.request.urlopen(url, timeout=180).read()
+              assert hashlib.sha256(data).hexdigest() == expected, "Source hash mismatch: " + dest
+              pathlib.Path(dest).write_bytes(data)
+          reader = PdfReader("book/FIRST_Edition_Book_FBI_ACTION_NOW.pdf")
+          assert len(reader.pages) == 331
+          assert "EXHIBITS LIST" in reader.pages[40].extract_text()
+          assert "END OF EXHIBITS LIST" in reader.pages[96].extract_text()
+          writer = PdfWriter()
+          for page in reader.pages[40:97]:
+              writer.add_page(page)
+          writer.add_metadata({"/Title": "Aventura complaint exhibits - extract of book PDF pages 41-97", "/Subject": "57-page extract from the earlier 331-page compilation. Not a separately uploaded original exhibit packet."})
+          with open("documents/Aventura_Exhibits_Book_Extract.pdf", "wb") as stream:
+              writer.write(stream)
+          PY
+      - name: Commit preserved copies
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add book/Targeted_Complete_Book.epub book/FIRST_Edition_Book_FBI_ACTION_NOW.pdf documents/Aventura_Exhibits_Book_Extract.pdf
+          git diff --cached --quiet && exit 0
+          git commit -m "Preserve verified book downloads and Aventura exhibit extract on own domain"
+          git push
