@@ -3,6 +3,10 @@ on:
   push:
     paths:
       - '.github/workflows/preserve-book.yml'
+  workflow_dispatch:
+concurrency:
+  group: preserve-book-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: write
 jobs:
